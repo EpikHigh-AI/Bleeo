@@ -1,10 +1,11 @@
-body {
+/* Keep toolbar popup autosizing independent of its initial viewport width. */
+html, body {
   width: 400px;
-  max-width: 100vw;
+  min-width: 400px;
 }
 
 .shell {
-  padding: 16px 20px 12px;
+  padding: 12px 18px 10px;
 }
 
 .brand-tag {
@@ -19,10 +20,10 @@ body {
 
 .hero-content {
   display: grid;
-  grid-template-columns: 1fr 102px;
+  grid-template-columns: 1fr 96px;
   align-items: center;
   gap: 6px;
-  padding: 8px 0 10px;
+  padding: 6px 0 8px;
 }
 
 .display-title {
@@ -40,14 +41,15 @@ body {
 
 .garden {
   display: block;
-  width: 102px;
+  width: 96px;
   height: auto;
   transform: rotate(3deg);
 }
 
 .panel {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
   padding: 12px;
   border: 1px solid #d8d7e4;
   border-radius: 23px;
@@ -79,7 +81,9 @@ body {
   font-size: 17px;
   font-weight: 650;
   letter-spacing: -.4px;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .state-chip {
@@ -169,7 +173,7 @@ body {
 .privacy-spark {
   margin-left: auto;
   color: var(--accent);
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -190,7 +194,7 @@ body {
   margin: 12px 3px 0;
   color: var(--muted);
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .reveal-tip > span {

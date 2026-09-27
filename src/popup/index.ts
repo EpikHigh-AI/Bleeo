@@ -25,7 +25,9 @@ function render() {
   siteInput.checked = available && settings.sitePreferenceEnabled;
   sensitivityInputs.forEach((input) => { input.checked = input.value === settings!.sensitivity; });
   document.querySelector("#sensitivity-help")!.textContent = SENSITIVITY_HELP[settings.sensitivity];
-  document.querySelector("#hostname")!.textContent = hostname || "Browser page";
+  const hostnameElement = document.querySelector<HTMLElement>("#hostname")!;
+  hostnameElement.textContent = hostname || "Browser page";
+  hostnameElement.title = hostname || "Browser page";
   const status = getPageStatus(settings, available);
   const chip = document.querySelector<HTMLElement>("#state-chip")!;
   chip.textContent = status === "Filtering" ? "Active" : status;
