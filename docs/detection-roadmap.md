@@ -15,6 +15,8 @@ The heuristic detector now scores multiple categories of alarming language:
 
 It also dampens some calm civic/reporting contexts so borderline text like a scheduled warning-system drill is less likely to be blurred.
 
+The [clickbait filtering update](clickbait-filtering.md) adds research-informed hooks for withheld details and exaggerated reactions, Unicode normalization, and collection fixes for split headlines and oversized social cards. An authored 50-headline regression set and `npm run evaluate` now provide a reproducible baseline comparison; an independent labeled evaluation set is still needed before drawing broader accuracy conclusions.
+
 ## Why Not Fine-Tune Immediately
 
 A browser model is possible, but it should come after a labeled evaluation set. Without that, a fine-tuned model can feel smarter while making harder-to-debug mistakes.

@@ -100,7 +100,7 @@ function shouldSkipNode(textNode: Text, hiddenCache: WeakMap<Element, boolean>):
   return false;
 }
 
-function shouldSkipAggregateNode(textNode: Text, hiddenCache: WeakMap<Element, boolean>): boolean {
+function shouldSkipAggregateNode(textNode: Text, hiddenCache: WeakMap<Element, boolean>, preserveWhitespace = false): boolean {
   const parent = textNode.parentElement;
   if (!parent) {
     return true;
@@ -123,7 +123,7 @@ function shouldSkipAggregateNode(textNode: Text, hiddenCache: WeakMap<Element, b
   }
 
   const text = normalizeTextContent(textNode.textContent ?? "");
-  if (!text) {
+  if (!text && !preserveWhitespace) {
     return true;
   }
 
@@ -168,53 +168,49 @@ function aggregateSelectorsForHost(hostname: string): string[] {
   return [];
 }
 
-function collectAggregateEntries(
-  root: ParentNode = document.body,
-  hiddenCache: WeakMap<Element, boolean> = new WeakMap()
+function collectContainerEntries(
+  containers: Element[],
+  acceptsText: (text: string) => boolean,
+  hiddenCache: WeakMap<Element, boolean>,
+  separator = " "
 ): { entries: ScanEntry[]; roots: Element[] } {
-  const selectors = aggregateSelectorsForHost(window.location.hostname);
-  if (!selectors.length) {
-    return { entries: [], roots: [] };
-  }
-
-  const roots = Array.from(
-    new Set(
-      selectors.flatMap((selector) => Array.from(root.querySelectorAll(selector)))
-    )
-  );
-
+  const roots: Element[] = [];
   const entries: ScanEntry[] = [];
-  for (const container of roots) {
-    if (container.closest(".bleeo-filtered")) {
+  for (const container of containers) {
+    if (container.closest(".bleeo-filtered") || isInsideRoots(container, roots)) {
       continue;
     }
 
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
+    const textParts: string[] = [];
 
     while (walker.nextNode()) {
       const node = walker.currentNode as Text;
-      if (shouldSkipAggregateNode(node, hiddenCache)) {
+      if (shouldSkipAggregateNode(node, hiddenCache, separator === "")) {
         continue;
       }
-      nodes.push(node);
+      textParts.push(node.textContent ?? "");
+      // Preserve spaces when reconstructing an inline title, but never blur them.
+      if (normalizeTextContent(node.textContent ?? "")) nodes.push(node);
     }
 
     if (!nodes.length) {
       continue;
     }
 
-    const text = nodes
-      .map((node) => normalizeTextContent(node.textContent ?? ""))
-      .filter(Boolean)
-      .join(" ")
+    const text = textParts
+      .join(separator)
       .replace(/\s+/g, " ")
       .trim();
 
-    if (!isAggregateCandidateText(text)) {
+    if (!acceptsText(text)) {
       continue;
     }
 
+    // Only exclude containers actually classified as a unit. Oversized cards
+    // must still allow their individual headlines/text blocks to be scanned.
+    roots.push(container);
     const id = hashText(text);
     if (getCachedResult(id)?.label === "safe") {
       nodes.forEach(markProcessedNode);
@@ -225,6 +221,26 @@ function collectAggregateEntries(
   }
 
   return { entries, roots };
+}
+
+function collectAggregateEntries(
+  root: ParentNode,
+  hiddenCache: WeakMap<Element, boolean>
+): { entries: ScanEntry[]; roots: Element[] } {
+  const selectors = aggregateSelectorsForHost(window.location.hostname);
+  const containers = selectors.length ? Array.from(root.querySelectorAll(selectors.join(","))) : [];
+  return collectContainerEntries(containers, isAggregateCandidateText, hiddenCache);
+}
+
+function collectHeadlineEntries(
+  root: ParentNode,
+  excludedRoots: Element[],
+  hiddenCache: WeakMap<Element, boolean>
+): { entries: ScanEntry[]; roots: Element[] } {
+  // Headlines often split a single phrase across links, spans, or emphasis.
+  const containers = Array.from(root.querySelectorAll("h1, h2, h3, h4, [role='heading'], a[title], a#video-title"))
+    .filter((container) => !isInsideRoots(container, excludedRoots));
+  return collectContainerEntries(containers, isCandidateText, hiddenCache, "");
 }
 
 function collectCandidates(
@@ -451,8 +467,9 @@ async function scanPage() {
   const aggregate = isSocialHost(window.location.hostname)
     ? collectAggregateEntries(document.body, hiddenCache)
     : { entries: [], roots: [] };
-  const standaloneEntries = collectCandidates(document.body, aggregate.roots, hiddenCache);
-  const entries = [...aggregate.entries, ...standaloneEntries];
+  const headlines = collectHeadlineEntries(document.body, aggregate.roots, hiddenCache);
+  const standaloneEntries = collectCandidates(document.body, [...aggregate.roots, ...headlines.roots], hiddenCache);
+  const entries = [...aggregate.entries, ...headlines.entries, ...standaloneEntries];
   if (!entries.length) {
     await reportFilteredCount();
     return;

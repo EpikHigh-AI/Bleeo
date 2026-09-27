@@ -37,17 +37,56 @@ const ALARM_TERMS: Array<{ term: string; weight: number }> = [
   { term: "warning", weight: 0.12 }
 ];
 
+// Specific withheld details and exaggerated payoffs can stand on their own.
+// Generic questions, "this is why", and list formats are not enough evidence.
+// Research and original regression examples: docs/clickbait-filtering.md.
+const HEADLINE_HOOKS: Array<{ reasonCode: string; patterns: RegExp[] }> = [
+  {
+    reasonCode: "clickbait-disbelief",
+    patterns: [
+      /\byou (?:won'?t|will not|wouldn'?t|can'?t) believe\b/i,
+      /\byou(?:'ll| will) never (?:guess|believe)\b/i,
+      /\b(?:you can'?t|can you) guess (?:what|who|why|which)\b/i
+    ]
+  },
+  {
+    reasonCode: "clickbait-payoff",
+    patterns: [
+      /\b(?:will|is going to) (?:blow your mind|leave you speechless|shock you|make your jaw drop)\b/i,
+      /\b(?:the (?:reason|answer|result)|what (?:he|she|they) (?:found|did|saw)) (?:will|might) surprise you\b/i,
+      /\b(?:one|this) weird trick\b/i,
+      /\b(?:doctors|dentists|banks|experts|trainers) hate (?:him|her|this|it|them)\b/i
+    ]
+  },
+  {
+    reasonCode: "clickbait-withheld-detail",
+    patterns: [
+      /(?:^|[,.!?;:\-]\s*|\b(?:and|but)\s+)what (?:happened|happens|comes) next\s*[.!?…]*$/i,
+      /\bwhat (?:happened|happens|comes) next (?:will|might) (?:shock|surprise|stun|amaze) you\b/i,
+      /\band then this happened\b/i,
+      /\b(?:you need|you have|you've got) to see this\b/i,
+      /\bwhat (?:they|doctors|banks|experts) don'?t want you to know\b/i,
+      /\bwhat (?:nobody|no one) tells you about\b/i,
+      /\b(?:saw|found|discovered|did) (?:this|these)\s*(?:\.{2,}|…)[.!?…]*$/i,
+      /\b(?:saw|found|discovered|did) (?:THIS|THESE)[.!?]*$/
+    ]
+  },
+  {
+    reasonCode: "clickbait-list-tease",
+    patterns: [
+      /(?:\b(?:number|no\.?|part)\s*\d+|#\s*\d+|\bthe last (?:one|tip|item))\s+(?:will\s+)?(?:shock|surprise|stun|amaze)\s+you\b/i,
+      /(?:\b(?:number|no\.?)\s*\d+|#\s*\d+|\bthe last one)\s+is\s+(?:unbelievable|shocking|mind-blowing)\b/i
+    ]
+  }
+];
+
 const CLICKBAIT_PATTERNS = [
-  /you won'?t believe/i,
-  /what happened next/i,
-  /this is why/i,
-  /stuns? the internet/i,
-  /breaks the internet/i,
-  /goes viral/i,
-  /leaves .* speechless/i,
-  /everyone is saying/i,
-  /must see/i,
-  /the truth about/i
+  /\bstuns? the internet\b/i,
+  /\bbreaks the internet\b/i,
+  /\bgoes viral\b/i,
+  /\bleaves .* speechless\b/i,
+  /\beveryone is saying\b/i,
+  /\bmust[- ]see\b/i
 ];
 
 const FEAR_APPEAL_PATTERNS = [
@@ -103,32 +142,44 @@ const THRESHOLDS: Record<Sensitivity, number> = {
   high: 0.56
 };
 
-export function isCandidateText(text: string): boolean {
-  const normalized = text.replace(/\s+/g, " ").trim();
-  if (normalized.length < 24 || normalized.length > 260) {
+function normalizeDetectionText(text: string): string {
+  return text
+    .normalize("NFKC")
+    .replace(/[\u2018\u2019\u02bc]/g, "'")
+    .replace(/[\u2010-\u2015]/g, "-")
+    .replace(/[\u200b-\u200d\ufeff]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getHeadlineHook(text: string): string | undefined {
+  return HEADLINE_HOOKS.find(({ patterns }) => patterns.some((pattern) => pattern.test(text)))?.reasonCode;
+}
+
+function isCandidateWithinLimits(text: string, maxLength: number, maxWords: number): boolean {
+  const normalized = normalizeDetectionText(text);
+  if (normalized.length < 12 || normalized.length > maxLength) {
     return false;
   }
 
   const wordCount = normalized.split(/\s+/).length;
-  if (wordCount < 4 || wordCount > 42) {
+  if (wordCount < 3 || wordCount > maxWords) {
     return false;
   }
 
+  // Keep short navigation labels out, but admit explicit short clickbait hooks.
+  if ((normalized.length < 24 || wordCount < 4) && !getHeadlineHook(normalized)) {
+    return false;
+  }
   return /[!?]|[A-Za-z]{4,}/.test(normalized);
 }
 
+export function isCandidateText(text: string): boolean {
+  return isCandidateWithinLimits(text, 260, 42);
+}
+
 export function isAggregateCandidateText(text: string): boolean {
-  const normalized = text.replace(/\s+/g, " ").trim();
-  if (normalized.length < 24 || normalized.length > 520) {
-    return false;
-  }
-
-  const wordCount = normalized.split(/\s+/).length;
-  if (wordCount < 4 || wordCount > 90) {
-    return false;
-  }
-
-  return /[!?]|[A-Za-z]{4,}/.test(normalized);
+  return isCandidateWithinLimits(text, 520, 90);
 }
 
 function clampScore(score: number): number {
@@ -204,7 +255,7 @@ function getSocialUppercaseReason(text: string): string | null {
 }
 
 export function scoreSensationalism(text: string, hostname?: string): { score: number; reasonCode: string } {
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = normalizeDetectionText(text);
   const normalizedHostname = hostname ? normalizeHostname(hostname) : "";
   let score = 0;
   let reasonCode = "neutral";
@@ -236,8 +287,11 @@ export function scoreSensationalism(text: string, hostname?: string): { score: n
   );
   addSignal(Math.min(0.42, alarmScore), "alarmist-language");
 
-  const clickbaitMatch = CLICKBAIT_PATTERNS.find((pattern) => pattern.test(normalized));
-  if (clickbaitMatch) {
+  const headlineHook = getHeadlineHook(normalized);
+  if (headlineHook) {
+    // Count the hook once, even when it fits several overlapping patterns.
+    addSignal(0.72, headlineHook);
+  } else if (CLICKBAIT_PATTERNS.some((pattern) => pattern.test(normalized))) {
     addSignal(0.32, "clickbait-phrase");
   }
 
@@ -279,7 +333,7 @@ export function scoreSensationalism(text: string, hostname?: string): { score: n
 
   return {
     score: clampScore(score),
-    reasonCode
+    reasonCode: headlineHook ?? reasonCode
   };
 }
 

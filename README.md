@@ -66,6 +66,8 @@ The extension runs on these domains and their subdomains. Other websites and bro
 
 Bleeo collects candidate headlines, posts, and short text blocks, then scores them with local rules. Signals include alarm terms, fear appeals, outrage bait, urgency frames, curiosity hooks, repeated punctuation, and strong uppercase emphasis. Matched text is blurred without removing it from the page.
 
+Clickbait filtering now recognizes specific hooks such as disbelief, promised reactions, withheld details, and teased list items—even without loud punctuation. It handles curly apostrophes and headlines split across HTML elements. Ordinary questions, explanatory titles, and numbered guides do not trigger filtering on those formats alone. See the [research sources and regression evaluation](docs/clickbait-filtering.md) for examples and limits.
+
 The current detector targets **English wording** and is rules-based. It can miss sensational language or soften ordinary reporting. If the result feels too strong, lower sensitivity or turn filtering off for that site. A filtered phrase is a wording signal, not an assessment of truth or importance.
 
 See the [detection roadmap](docs/detection-roadmap.md) for the approach and plans to evaluate an optional in-browser model. That model is future work; this preview uses local rules.
@@ -93,6 +95,7 @@ For development:
 npm ci
 npm run typecheck
 npm test
+npm run evaluate
 npm run build
 ```
 
