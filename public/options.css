@@ -156,7 +156,20 @@ h2 {
   display: grid;
   gap: 0.12rem;
   font-weight: 750;
+  padding-right: 0.5rem;
 }
+
+[hidden] { display: none !important; }
+.save-status { display: flex; align-items: center; gap: 0.75rem; min-height: 2rem; }
+.save-status p { margin: 0; font-size: 0.9rem; }
+#feedback[data-state="error"] { color: var(--danger); }
+.field small { color: var(--muted); font-size: 0.8rem; }
+button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+input:disabled + .switch-ui { opacity: 0.5; }
+a { color: var(--accent-strong); text-underline-offset: 0.2em; }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+summary { cursor: pointer; color: var(--accent-strong); font-weight: 650; }
+details p { margin: 0.75rem 0 0; }
 
 .label-stack small,
 .field-label,

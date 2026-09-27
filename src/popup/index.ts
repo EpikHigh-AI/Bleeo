@@ -1,169 +1,110 @@
+import { isDefaultTargetHost } from "../shared/settings";
+import { getPageStatus, requestSettings, SENSITIVITY_HELP } from "../shared/ui";
 import type { Message, PopupState, Settings } from "../shared/types";
 
-const globalEnabledInput = document.querySelector<HTMLInputElement>("#global-enabled");
-const siteEnabledInput = document.querySelector<HTMLInputElement>("#site-enabled");
-const sensitivityInput = document.querySelector<HTMLSelectElement>("#sensitivity");
-const modeElement = document.querySelector<HTMLElement>("#mode");
-const siteLabel = document.querySelector<HTMLElement>("#site-label");
-const siteStatusElement = document.querySelector<HTMLElement>("#site-status");
-const stateChip = document.querySelector<HTMLElement>("#state-chip");
-const snoozeSiteButton = document.querySelector<HTMLButtonElement>("#snooze-site");
-const openOptionsButton = document.querySelector<HTMLButtonElement>("#open-options");
-const SNOOZE_DURATION_MS = 60 * 60 * 1000;
+const globalInput = document.querySelector<HTMLInputElement>("#global-enabled")!;
+const siteInput = document.querySelector<HTMLInputElement>("#site-enabled")!;
+const sensitivityInput = document.querySelector<HTMLSelectElement>("#sensitivity")!;
+const snoozeButton = document.querySelector<HTMLButtonElement>("#snooze-site")!;
+const feedback = document.querySelector<HTMLElement>("#feedback")!;
+const retryButton = document.querySelector<HTMLButtonElement>("#retry")!;
+const controls = [globalInput, siteInput, sensitivityInput, snoozeButton];
+let hostname = "";
+let available = false;
+let settings: PopupState | undefined;
+let busy = false;
+let snoozeTimer: ReturnType<typeof setTimeout> | undefined;
 
-interface ActiveTabInfo {
-  hostname: string;
-  siteToggleAvailable: boolean;
+function render() {
+  controls.forEach((control) => { control.disabled = busy || !settings; });
+  siteInput.disabled ||= !available;
+  snoozeButton.disabled ||= !available || !settings?.enabled || !settings.sitePreferenceEnabled;
+  if (!settings) return;
+
+  globalInput.checked = settings.enabled;
+  siteInput.checked = available && settings.sitePreferenceEnabled;
+  sensitivityInput.value = settings.sensitivity;
+  document.querySelector("#sensitivity-help")!.textContent = SENSITIVITY_HELP[settings.sensitivity];
+  document.querySelector("#hostname")!.textContent = hostname || "Browser page";
+  const status = getPageStatus(settings, available);
+  const chip = document.querySelector<HTMLElement>("#state-chip")!;
+  chip.textContent = status === "Filtering" ? "Active" : status;
+  chip.dataset.state = status === "Filtering" ? "active" : status === "Paused" ? "paused" : "off";
+  document.querySelector("#mode")!.textContent = "On-device";
+  document.querySelector("#site-label")!.textContent = !available
+    ? hostname ? "Bleeo does not run on this site" : "Open a supported news or social page"
+    : !settings.enabled ? "Turn on Bleeo above to filter this page"
+    : settings.siteSnoozed && settings.sitePreferenceEnabled
+      ? `Paused until ${new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(settings.siteSnoozedUntil)}`
+      : settings.sitePreferenceSource === "override" ? "Your preference for this site" : "On by default here";
+  snoozeButton.dataset.snoozed = String(settings.siteSnoozed);
+  snoozeButton.textContent = settings.siteSnoozed ? "Resume this site" : "Pause for 1 hour";
+  clearTimeout(snoozeTimer);
+  if (settings.siteSnoozedUntil) {
+    snoozeTimer = setTimeout(() => { if (!busy) void load(); }, Math.max(0, settings.siteSnoozedUntil - Date.now() + 250));
+  }
 }
 
-async function getActiveTabInfo(): Promise<ActiveTabInfo> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url) {
-    return { hostname: "", siteToggleAvailable: false };
-  }
+function showFeedback(message: string, error = false) {
+  feedback.textContent = message;
+  feedback.dataset.state = error ? "error" : "saved";
+  retryButton.hidden = !error;
+}
 
+async function load() {
+  if (busy) return;
+  busy = true;
+  render();
   try {
-    const parsed = new URL(tab.url);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return { hostname: "", siteToggleAvailable: false };
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    hostname = "";
+    available = false;
+    if (tab?.url) {
+      const url = new URL(tab.url);
+      if (url.protocol === "http:" || url.protocol === "https:") {
+        hostname = url.hostname;
+        available = isDefaultTargetHost(hostname) && await chrome.permissions.contains({ origins: [tab.url] });
+      }
     }
-
-    const siteToggleAvailable = await chrome.permissions.contains({ origins: [tab.url] });
-    return { hostname: parsed.hostname, siteToggleAvailable };
+    settings = await requestSettings<PopupState>({ type: "GET_POPUP_STATE", hostname });
+    showFeedback("Changes save automatically.");
   } catch {
-    return { hostname: "", siteToggleAvailable: false };
+    showFeedback("Could not load settings. Try again.", true);
+  } finally {
+    busy = false;
+    render();
   }
 }
 
-async function sendMessage<T>(message: Message): Promise<T> {
-  return chrome.runtime.sendMessage(message);
-}
-
-async function refreshPopup(hostname: string, siteToggleAvailable: boolean) {
-  const response = await sendMessage<{ settings: PopupState }>({
-    type: "GET_POPUP_STATE",
-    hostname
-  });
-
-  render(hostname, siteToggleAvailable, response.settings);
-}
-
-function bindHandlers(hostname: string, siteToggleAvailable: boolean) {
-  globalEnabledInput?.addEventListener("change", async () => {
-    await sendMessage<{ settings: Settings }>({ type: "TOGGLE_GLOBAL", enabled: Boolean(globalEnabledInput?.checked) });
-    await refreshPopup(hostname, siteToggleAvailable);
-  });
-
-  siteEnabledInput?.addEventListener("change", async () => {
-    await sendMessage<{ settings: Settings }>({
-      type: "TOGGLE_SITE",
-      hostname,
-      enabled: Boolean(siteEnabledInput?.checked)
-    });
-    await refreshPopup(hostname, siteToggleAvailable);
-  });
-
-  sensitivityInput?.addEventListener("change", async () => {
-    if (!sensitivityInput) {
-      return;
-    }
-    await sendMessage<{ settings: Settings }>({
-      type: "SET_SENSITIVITY",
-      sensitivity: sensitivityInput.value as PopupState["sensitivity"]
-    });
-    await refreshPopup(hostname, siteToggleAvailable);
-  });
-
-  snoozeSiteButton?.addEventListener("click", async () => {
-    if (!siteToggleAvailable) {
-      return;
-    }
-
-    if (snoozeSiteButton.dataset.snoozed === "true") {
-      await sendMessage<{ settings: Settings }>({ type: "CLEAR_SITE_SNOOZE", hostname });
-    } else {
-      await sendMessage<{ settings: Settings }>({
-        type: "SNOOZE_SITE",
-        hostname,
-        until: Date.now() + SNOOZE_DURATION_MS
-      });
-    }
-    await refreshPopup(hostname, siteToggleAvailable);
-  });
-
-  openOptionsButton?.addEventListener("click", () => {
-    chrome.runtime.openOptionsPage();
-  });
-}
-
-function formatSnoozeUntil(until?: number): string {
-  if (!until) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(until));
-}
-
-function render(hostname: string, siteToggleAvailable: boolean, settings: PopupState) {
-  if (globalEnabledInput) {
-    globalEnabledInput.checked = settings.enabled;
-  }
-
-  if (siteEnabledInput) {
-    siteEnabledInput.checked = settings.sitePreferenceEnabled;
-    siteEnabledInput.disabled = !siteToggleAvailable;
-  }
-
-  if (sensitivityInput) {
-    sensitivityInput.value = settings.sensitivity;
-  }
-
-  if (modeElement) {
-    modeElement.textContent = settings.modelMode === "local-ai" ? "Local AI" : "Rules fallback";
-  }
-
-  if (stateChip) {
-    const active = settings.enabled && settings.siteEnabled && !settings.siteSnoozed;
-    stateChip.textContent = active ? "Active" : settings.siteSnoozed ? "Paused" : "Off";
-    stateChip.dataset.state = active ? "active" : settings.siteSnoozed ? "paused" : "off";
-  }
-
-  if (siteLabel) {
-    const defaultState = settings.siteSnoozed
-      ? `Paused until ${formatSnoozeUntil(settings.siteSnoozedUntil)}`
-      : settings.sitePreferenceSource === "override"
-        ? settings.sitePreferenceEnabled
-          ? "On for this site"
-          : "Off for this site"
-        : settings.defaultEnabledForSite
-          ? "On by default here"
-          : "Off by default here";
-    siteLabel.textContent = siteToggleAvailable
-      ? defaultState
-      : hostname
-        ? "Site toggle isn't available on this site"
-        : "Site toggle is only available on web pages";
-  }
-
-  if (siteStatusElement) {
-    siteStatusElement.textContent = !siteToggleAvailable
-      ? "Unavailable"
-      : settings.siteSnoozed
-        ? "Paused"
-        : settings.siteEnabled
-          ? "Filtering"
-          : "Not filtering";
-  }
-
-  if (snoozeSiteButton) {
-    snoozeSiteButton.disabled = !siteToggleAvailable;
-    snoozeSiteButton.dataset.snoozed = String(settings.siteSnoozed);
-    snoozeSiteButton.textContent = settings.siteSnoozed ? "Resume this site" : "Pause this site for 1 hour";
+async function save(message: Message) {
+  if (busy || !settings) return;
+  busy = true;
+  render();
+  showFeedback("Saving…");
+  try {
+    await requestSettings<Settings>(message);
+    settings = await requestSettings<PopupState>({ type: "GET_POPUP_STATE", hostname });
+    showFeedback("Saved. Your open pages update automatically.");
+  } catch {
+    showFeedback("Could not confirm your change. Retry, then try the control again.", true);
+  } finally {
+    busy = false;
+    render();
   }
 }
 
-void (async () => {
-  const { hostname, siteToggleAvailable } = await getActiveTabInfo();
-  await refreshPopup(hostname, siteToggleAvailable);
-  bindHandlers(hostname, siteToggleAvailable);
-})();
+globalInput.addEventListener("change", () => { void save({ type: "TOGGLE_GLOBAL", enabled: globalInput.checked }); });
+siteInput.addEventListener("change", () => { void save({ type: "TOGGLE_SITE", hostname, enabled: siteInput.checked }); });
+sensitivityInput.addEventListener("change", () => { void save({ type: "SET_SENSITIVITY", sensitivity: sensitivityInput.value as PopupState["sensitivity"] }); });
+snoozeButton.addEventListener("click", () => {
+  if (!available) return;
+  void save(settings?.siteSnoozed
+    ? { type: "CLEAR_SITE_SNOOZE", hostname }
+    : { type: "SNOOZE_SITE", hostname, until: Date.now() + 60 * 60 * 1000 });
+});
+document.querySelector("#open-options")!.addEventListener("click", () => {
+  void chrome.runtime.openOptionsPage().catch(() => showFeedback("Could not open settings. Try again.", true));
+});
+retryButton.addEventListener("click", () => { void load(); });
+chrome.storage.onChanged.addListener(() => { if (!busy) void load(); });
+void load();

@@ -21,6 +21,13 @@
   box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
 }
 
+.bleeo-filtered:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 3px;
+}
+
+.bleeo-signal[hidden] { display: none !important; }
+
 .bleeo-filtered[data-bleeo-revealed="true"] {
   filter: none;
   background: rgba(231, 248, 243, 0.88);

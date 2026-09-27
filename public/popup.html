@@ -12,25 +12,26 @@
         <div class="brand-row">
           <div class="brand-mark" aria-hidden="true">B</div>
           <div>
-            <p class="eyebrow">Mental-space filter</p>
+            <p class="eyebrow">A calmer feed</p>
             <h1 id="popup-title">Bleeo</h1>
           </div>
         </div>
-        <p class="lede">Keep loud language softened while the page stays usable.</p>
+        <p class="lede">Soften the noise. Read on your terms.</p>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <span>Protection</span>
-          <strong id="state-chip" class="state-chip">Loading</strong>
+          <span>Current page</span>
+          <strong id="state-chip" class="state-chip" role="status">Loading</strong>
         </div>
+        <p id="hostname" class="current-site">Checking current page…</p>
 
         <label class="toggle switch-row">
           <span class="label-stack">
-            <span>Extension</span>
+            <span>Enable Bleeo</span>
             <small>Across supported sites</small>
           </span>
-          <input id="global-enabled" type="checkbox" />
+          <input id="global-enabled" type="checkbox" disabled />
           <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
@@ -39,37 +40,34 @@
             <span>This site</span>
             <small id="site-label">Checking current page</small>
           </span>
-          <input id="site-enabled" type="checkbox" />
+          <input id="site-enabled" type="checkbox" disabled />
           <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
         <label class="field">
           <span class="field-label">Sensitivity</span>
           <span class="select-shell">
-            <select id="sensitivity">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+            <select id="sensitivity" aria-describedby="sensitivity-help" disabled>
+              <option value="low">Low · Less filtering</option>
+              <option value="medium">Medium · Balanced</option>
+              <option value="high">High · More filtering</option>
             </select>
           </span>
+          <small id="sensitivity-help" class="helper">Choose how much language to soften.</small>
         </label>
 
-        <div class="status-grid" aria-label="Current filter state">
-          <div class="status-card">
-            <span class="status-label">Mode</span>
-            <strong id="mode">Loading</strong>
-          </div>
-          <div class="status-card">
-            <span class="status-label">Page</span>
-            <strong id="site-status">Loading</strong>
-          </div>
-        </div>
+        <p class="privacy-note"><span id="mode">On-device</span> · No server calls</p>
 
         <div class="actions">
-          <button id="snooze-site" class="button secondary" type="button">Pause this site</button>
-          <button id="open-options" class="button" type="button">Open settings</button>
+          <button id="snooze-site" class="button secondary" type="button" disabled>Pause for 1 hour</button>
+          <button id="open-options" class="button" type="button">All settings</button>
+        </div>
+        <div class="feedback-row">
+          <p id="feedback" class="helper" role="status" aria-live="polite">Loading settings…</p>
+          <button id="retry" class="button secondary" type="button" hidden>Retry</button>
         </div>
       </section>
+      <p class="reveal-tip">Click or press Enter / Space on softened text to reveal it for 9 seconds.</p>
     </main>
 
     <script type="module" src="popup.js"></script>

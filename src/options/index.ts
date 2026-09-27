@@ -1,4 +1,5 @@
 import type { Message, Settings } from "../shared/types";
+import { requestSettings, SENSITIVITY_HELP } from "../shared/ui";
 
 const enabledInput = document.querySelector<HTMLInputElement>("#enabled");
 const sensitivityInput = document.querySelector<HTMLSelectElement>("#sensitivity");
@@ -7,9 +8,38 @@ const modeElement = document.querySelector<HTMLElement>("#mode");
 const refreshButton = document.querySelector<HTMLButtonElement>("#refresh");
 const tableBody = document.querySelector<HTMLTableSectionElement>("#site-overrides");
 const emptyState = document.querySelector<HTMLElement>("#empty-state");
+const feedback = document.querySelector<HTMLElement>("#feedback")!;
+const retryButton = document.querySelector<HTMLButtonElement>("#retry")!;
+let lastSettings: Settings | undefined;
+let busy = false;
 
-async function sendMessage<T>(message: Message): Promise<T> {
-  return chrome.runtime.sendMessage(message);
+function showFeedback(message: string, error = false) {
+  feedback.textContent = message;
+  feedback.dataset.state = error ? "error" : "saved";
+  retryButton.hidden = !error;
+}
+
+function disableControls() {
+  document.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(".controls input, .controls select, #site-overrides button, #refresh, #retry")
+    .forEach((control) => { control.disabled = busy || (!lastSettings && control.id !== "refresh" && control.id !== "retry"); });
+}
+
+async function update(message: Message, success = "Saved. Your open pages update automatically.") {
+  if (busy) return;
+  busy = true;
+  disableControls();
+  showFeedback(message.type === "GET_ALL_SETTINGS" ? "Loading settings…" : "Saving…");
+  try {
+    lastSettings = await requestSettings<Settings>(message);
+    render(lastSettings);
+    showFeedback(success);
+  } catch {
+    if (lastSettings) render(lastSettings);
+    showFeedback("Could not confirm your settings. Retry, then try the control again.", true);
+  } finally {
+    busy = false;
+    disableControls();
+  }
 }
 
 function renderOverrides(settings: Settings) {
@@ -17,15 +47,17 @@ function renderOverrides(settings: Settings) {
     return;
   }
 
-  tableBody.innerHTML = "";
+  tableBody.replaceChildren();
   const overrides = Object.entries(settings.siteOverrides).sort(([left], [right]) => left.localeCompare(right));
 
   if (!overrides.length) {
     emptyState.dataset.visible = "true";
+    tableBody.closest<HTMLElement>(".table-shell")!.hidden = true;
     return;
   }
 
   emptyState.dataset.visible = "false";
+  tableBody.closest<HTMLElement>(".table-shell")!.hidden = false;
   for (const [hostname, enabled] of overrides) {
     const row = document.createElement("tr");
 
@@ -40,15 +72,16 @@ function renderOverrides(settings: Settings) {
 
     const actionCell = document.createElement("td");
     const button = document.createElement("button");
-    button.className = "button danger";
+    button.className = "button subtle";
     button.type = "button";
-    button.textContent = "Remove";
+    button.textContent = "Use default";
+    button.setAttribute("aria-label", `Use default for ${hostname}`);
     button.addEventListener("click", async () => {
-      const response = await sendMessage<{ settings: Settings }>({
+      await update({
         type: "REMOVE_SITE_OVERRIDE",
         hostname
-      });
-      render(response.settings);
+      }, `Default restored for ${hostname}.`);
+      refreshButton?.focus();
     });
     actionCell.appendChild(button);
 
@@ -64,26 +97,25 @@ function render(settings: Settings) {
   if (sensitivityInput) {
     sensitivityInput.value = settings.sensitivity;
   }
+  document.querySelector("#sensitivity-help")!.textContent = SENSITIVITY_HELP[settings.sensitivity];
   if (markersInput) {
     markersInput.checked = settings.showMarkers;
   }
   if (modeElement) {
-    modeElement.textContent = settings.modelMode === "local-ai" ? "Local AI" : "Rules fallback";
+    modeElement.textContent = "Local rules · No server calls";
   }
   renderOverrides(settings);
 }
 
 async function refresh() {
-  const response = await sendMessage<{ settings: Settings }>({ type: "GET_ALL_SETTINGS" });
-  render(response.settings);
+  await update({ type: "GET_ALL_SETTINGS" }, "Changes save automatically.");
 }
 
 enabledInput?.addEventListener("change", async () => {
-  const response = await sendMessage<{ settings: Settings }>({
+  await update({
     type: "TOGGLE_GLOBAL",
     enabled: Boolean(enabledInput?.checked)
   });
-  render(response.settings);
 });
 
 sensitivityInput?.addEventListener("change", async () => {
@@ -91,23 +123,24 @@ sensitivityInput?.addEventListener("change", async () => {
     return;
   }
 
-  const response = await sendMessage<{ settings: Settings }>({
+  await update({
     type: "SET_SENSITIVITY",
     sensitivity: sensitivityInput.value as Settings["sensitivity"]
   });
-  render(response.settings);
 });
 
 markersInput?.addEventListener("change", async () => {
-  const response = await sendMessage<{ settings: Settings }>({
+  await update({
     type: "SET_SHOW_MARKERS",
     showMarkers: Boolean(markersInput?.checked)
   });
-  render(response.settings);
 });
 
 refreshButton?.addEventListener("click", () => {
   void refresh();
 });
+
+retryButton.addEventListener("click", () => { void refresh(); });
+chrome.storage.onChanged.addListener(() => { if (!busy) void refresh(); });
 
 void refresh();

@@ -1,121 +1,117 @@
 # Bleeo
 
-Bleeo is a privacy-first browser extension for Edge and Chrome that softens sensationalized text before it grabs your attention.
+### Soften the noise. Read on your terms.
 
-It runs locally in your browser, looks for emotionally sharp or clickbait-style language on news and social feeds, and blurs matched text in place. You stay in control: click a blurred phrase to reveal it temporarily, adjust sensitivity, disable filtering globally, or set per-site overrides.
+Bleeo is an open-source Chrome and Edge extension that softens sensationalized language in news and social feeds. It blurs matched text in place, so you can choose when to read it while keeping the page usable.
 
-## Why Bleeo exists
+**Introducing Bleeo, now public at [EpikHigh-AI](https://github.com/EpikHigh-AI).** Try the early preview, tell us what feels useful, and help shape a calmer browsing experience.
 
-Modern feeds are optimized to pull people into urgency, outrage, and panic. Bleeo is built around a smaller goal: make the web feel calmer without blocking access to information.
+[Get started](#get-started) · [How it works](#how-it-works) · [Privacy](#privacy) · [Contribute](#contribute)
 
-The extension does not rate people, sources, or viewpoints. It only looks at the wording of visible text and applies a local filter when the language appears sensationalized.
+<img src="docs/images/popup.png" alt="Bleeo toolbar preview showing current-site controls, sensitivity guidance, and local processing" width="320" />
 
-## Features
+## A little more room to choose
 
-- Local text classification with no remote server calls.
-- Default filtering on common news and social domains.
-- In-place blur that preserves page layout.
-- Click-to-reveal behavior for filtered text.
-- One-hour per-site pause from the popup.
-- Sensitivity controls for low, medium, and high filtering.
-- Global enablement and per-site overrides.
-- Optional visible markers on filtered text.
-- Extension badge count for the current page.
+Feeds compete for attention with urgency, outrage, and curiosity hooks. Bleeo adds a small pause between seeing that language and engaging with it.
+
+- **Stay in control.** Click softened text to reveal it for 9 seconds. Keyboard users can focus it and press Enter or Space. The first click on a softened link reveals it; a second click while revealed opens the link.
+- **Find your balance.** Choose low, medium, or high sensitivity, with guidance next to the control.
+- **Take a break.** Pause a supported site for an hour and resume whenever you like.
+- **Make it yours.** Switch filtering off globally or for a specific hostname. Restore a site's default preference from settings.
+- **Know what's happening.** The popup shows the current hostname, explains whether filtering is active, and confirms saved changes. The toolbar badge counts softened text blocks on the page.
+- **Keep text local.** Detection runs on your device, with no hosted classifier, telemetry, or tracking SDK.
+
+Bleeo responds to wording. It does not judge a source's credibility, fact-check a claim, or classify a viewpoint.
+
+## Get started
+
+This is an early preview. The instructions below build the extension from source and load it into your browser.
+
+You need **Node.js 22 or newer**, npm, and Chrome or Microsoft Edge.
+
+```bash
+git clone https://github.com/EpikHigh-AI/Bleeo.git
+cd Bleeo
+npm ci
+npm run build
+```
+
+On Windows PowerShell, use `npm.cmd` in place of `npm` if your execution policy blocks `npm.ps1`.
+
+1. Open `chrome://extensions` or `edge://extensions`.
+2. Turn on **Developer mode**.
+3. Choose **Load unpacked**, then select the generated `dist` folder inside your clone.
+4. Pin Bleeo to your toolbar so its controls are easy to reach.
+5. Open a supported site. If it was already open when you installed Bleeo, reload it.
+
+Start with **Medium** sensitivity. Open the toolbar popup to see the current site's state, adjust filtering, or pause it. Changes save automatically and update open supported pages.
+
+### Choose your sensitivity
+
+| Setting | What to expect |
+| --- | --- |
+| Low | Softens the strongest signals; more text stays visible. |
+| Medium | A balanced starting point for everyday browsing. |
+| High | Softens more language; may also catch ordinary headlines. |
+
+### Supported sites
+
+| News | Social and video |
+| --- | --- |
+| CNN, BBC.com, The New York Times, Fox News, New York Post, The Guardian, The Washington Post, Google News | Reddit, X / Twitter, YouTube, Facebook, Instagram, Threads.net, TikTok, LinkedIn |
+
+The extension runs on these domains and their subdomains. Other websites and browser settings pages are outside its scope; a site preference does not grant access to additional domains. Detection coverage varies with page layout.
+
+## How it works
+
+Bleeo collects candidate headlines, posts, and short text blocks, then scores them with local rules. Signals include alarm terms, fear appeals, outrage bait, urgency frames, curiosity hooks, repeated punctuation, and strong uppercase emphasis. Matched text is blurred without removing it from the page.
+
+The current detector targets **English wording** and is rules-based. It can miss sensational language or soften ordinary reporting. If the result feels too strong, lower sensitivity or turn filtering off for that site. A filtered phrase is a wording signal, not an assessment of truth or importance.
+
+See the [detection roadmap](docs/detection-roadmap.md) for the approach and plans to evaluate an optional in-browser model. That model is future work; this preview uses local rules.
 
 ## Privacy
 
-Bleeo is designed so page text stays on your device.
+- Article text, post text, and browsing content are not sent to a server.
+- Classification happens in the extension's local runtime.
+- General preferences use browser sync storage and may sync through your signed-in browser account.
+- Site preferences and pause state use local storage and stay in this browser profile.
+- Host access is limited to the supported domains. `activeTab` lets the popup inspect the current tab; `storage` persists preferences; `offscreen` runs local classification separately from the page.
+- There are no analytics, tracking SDKs, or telemetry dependencies.
 
-- No article text, post text, or browsing content is sent to a server.
-- Classification happens in the extension runtime.
-- Global preferences are stored in sync storage. Per-site overrides and snooze state are stored in local storage only and do not follow the user across signed-in profiles or devices.
-- The extension only requests access to the supported news and social domains and does not run on other sites. `activeTab` is used for popup current-site controls.
-- The project has no analytics, tracking SDK, or telemetry dependency.
+## Contribute
 
-## How Filtering Works
+We welcome bug reports, UX improvements, and detection examples at [EpikHigh-AI/Bleeo](https://github.com/EpikHigh-AI/Bleeo).
 
-Bleeo scans visible page text and identifies candidate headlines, posts, and short text blocks. It then scores those candidates using local heuristics, including:
+- [Report a bug or suggest an improvement](https://github.com/EpikHigh-AI/Bleeo/issues/new). Include your browser, site hostname, steps, and what you expected. Use public or invented text for detection examples.
+- Help evaluate false positives and missed wording with focused test cases.
+- Open a pull request with a clear description and relevant verification.
 
-- alarm-style words such as urgent, shocking, panic, chaos, and disaster;
-- clickbait phrases such as "you won't believe" and "what happened next";
-- fear appeals, outrage bait, urgency frames, and curiosity-gap hooks;
-- loaded words such as bombshell, exposed, and unbelievable;
-- repeated punctuation and strong uppercase emphasis;
-- social-feed-specific handling for all-caps hooks.
-
-This is intentionally conservative and explainable. The current classifier is rules-based, so contributors can inspect and improve the behavior without needing a hosted model.
-
-## Detection Quality
-
-Bleeo uses a local rules-based detector for fast, explainable classification in the browser. See [docs/detection-roadmap.md](docs/detection-roadmap.md) for the current detection approach and the path toward an optional in-browser model.
-
-## Install For Development
-
-Requirements:
-
-- Node.js
-- npm
-- Microsoft Edge or Google Chrome
-
-Install dependencies:
+For development:
 
 ```bash
-cmd /C npm install
-cmd /C npm run typecheck
-cmd /C npm run build
+npm ci
+npm run typecheck
+npm test
+npm run build
 ```
 
-Run tests:
+Use `npm run dev` to watch TypeScript changes. After a build, reload the extension from the extensions page and refresh the page you are testing. Changes to files in `public/` require restarting watch mode or running `npm run build` again.
 
-```bash
-cmd /C npm test
-```
-
-Start watch mode while developing:
-
-```bash
-cmd /C npm run dev
-```
-
-On Windows PowerShell, use `cmd /C npm ...` if script execution policy blocks `npm.ps1`.
-
-## Load The Extension
-
-1. Build the project so `dist/` exists.
-2. Open `edge://extensions` or `chrome://extensions`.
-3. Enable Developer mode.
-4. Choose **Load unpacked**.
-5. Select the `dist` folder from this repository.
-
-For this workspace, that folder is:
+### Project structure
 
 ```text
-D:\Code\Bleeo\dist
+public/          Manifest, extension pages, styles, and icons
+src/background/ Service worker, settings storage, message handling
+src/content/    Page scanning, text wrapping, reveal behavior
+src/offscreen/  Local classification entrypoint
+src/popup/      Toolbar controls and current-site state
+src/options/    Preferences and site defaults
+src/shared/     Types, settings, validation, heuristics, UI helpers
+tests/          Regression tests
+docs/           Detection roadmap
 ```
 
-## Project Structure
+## License and attribution
 
-```text
-public/
-  manifest.json       Extension manifest
-  popup.html/css      Toolbar popup UI
-  options.html/css    Settings page UI
-  content.css         Styles injected into filtered pages
-
-src/
-  background/         Service worker and extension message handling
-  content/            Page scanning, DOM wrapping, reveal behavior
-  offscreen/          Offscreen classification entrypoint
-  popup/              Popup UI logic
-  options/            Settings page logic
-  shared/             Settings, validation, types, heuristics
-
-tests/
-  *.test.ts           Vitest coverage for shared behavior
-```
-
-## Attribution And License
-
-Bleeo is licensed under the Apache License 2.0. Redistributed copies must keep the copyright, license, and NOTICE attribution.
-
-Copyright is credited to `jupram`. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for details.
+Bleeo is licensed under the [Apache License 2.0](LICENSE). Copyright 2026 jupram. Redistributed copies must retain the license and applicable [NOTICE](NOTICE) attribution.

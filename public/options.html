@@ -17,6 +17,10 @@
           </div>
         </div>
         <p>Keep the filter calm, local, and under your control.</p>
+        <div class="save-status">
+          <p id="feedback" role="status" aria-live="polite">Loading settings…</p>
+          <button id="retry" class="button subtle" type="button" hidden>Retry</button>
+        </div>
       </section>
 
       <section class="summary-grid" aria-label="Settings summary">
@@ -40,19 +44,20 @@
             <span>Enable extension</span>
             <small>Master filtering control</small>
           </span>
-          <input id="enabled" type="checkbox" />
+          <input id="enabled" type="checkbox" disabled />
           <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
         <label class="field">
           <span class="field-label">Sensitivity</span>
           <span class="select-shell">
-            <select id="sensitivity">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+            <select id="sensitivity" aria-describedby="sensitivity-help" disabled>
+              <option value="low">Low · Less filtering</option>
+              <option value="medium">Medium · Balanced</option>
+              <option value="high">High · More filtering</option>
             </select>
           </span>
+          <small id="sensitivity-help">Choose how much language to soften.</small>
         </label>
 
         <label class="toggle switch-row">
@@ -60,7 +65,7 @@
             <span>Show filter markers</span>
             <small>Badge filtered phrases on the page</small>
           </span>
-          <input id="markers" type="checkbox" />
+          <input id="markers" type="checkbox" disabled />
           <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
@@ -74,7 +79,7 @@
         <div class="section-header">
           <div>
             <h2>Site overrides</h2>
-            <p>Use overrides to explicitly enable or disable filtering per hostname.</p>
+            <p>Set a site's preference from the toolbar popup. Resetting it restores the default; it does not remove a temporary pause.</p>
           </div>
           <button id="refresh" class="button subtle" type="button">Refresh</button>
         </div>
@@ -91,12 +96,24 @@
             <tbody id="site-overrides"></tbody>
           </table>
         </div>
-        <p id="empty-state" class="empty">No site overrides yet.</p>
+        <p id="empty-state" class="empty">No custom preferences yet. Open Bleeo on a supported site and use the “This site” switch to add one.</p>
       </section>
 
       <section class="card note">
-        <h2>Privacy</h2>
+        <h2>Start with a calmer feed</h2>
+        <p>Open a supported site, then click the Bleeo toolbar icon. Medium sensitivity is a good starting point. Click softened text to reveal it for 9 seconds, or focus it and press Enter or Space.</p>
+        <details>
+          <summary>Where does Bleeo work?</summary>
+          <p>CNN, BBC.com, The New York Times, Fox News, New York Post, The Guardian, The Washington Post, Google News, Reddit, X / Twitter, YouTube, Facebook, Instagram, Threads.net, TikTok, and LinkedIn, including their subdomains.</p>
+          <p>Other sites and browser settings pages are outside the filter's scope. Detection depends on the site's layout and currently targets English wording.</p>
+        </details>
+      </section>
+
+      <section class="card note">
+        <h2>Your text stays on your device</h2>
         <p>All filtering happens locally in the browser. Bleeo does not send article or feed text to a server.</p>
+        <p>General preferences can sync through your browser account. Site preferences and pauses stay in this browser profile.</p>
+        <a href="https://github.com/EpikHigh-AI/Bleeo" target="_blank" rel="noopener noreferrer">Explore Bleeo on GitHub</a>
       </section>
     </main>
 

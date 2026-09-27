@@ -17,6 +17,7 @@ let signalElement: HTMLDivElement | null = null;
 let scanInFlight = false;
 let rescanQueued = false;
 let suppressObserver = 0;
+const revealTimers = new WeakMap<HTMLElement, number>();
 
 interface ScanEntry {
   candidate: CandidateText;
@@ -289,11 +290,11 @@ function setSignalMessage(signal: HTMLDivElement, count: number) {
   if (count > 0) {
     const strong = document.createElement("strong");
     strong.textContent = String(count);
-    signal.append(strong, ` post${count === 1 ? "" : "s"} softened by Bleeo`);
+    signal.append(strong, ` text block${count === 1 ? "" : "s"} softened by Bleeo`);
     return;
   }
 
-  signal.textContent = "Bleeo is watching for sharp language";
+  signal.textContent = "Bleeo is on · Text stays on your device";
 }
 
 function withObserverSuppressed<T>(callback: () => T): T {
@@ -355,7 +356,11 @@ function applyFilteredWrapper(node: Text, result: ClassificationResult) {
   wrapper.dataset.bleeoReason = result.reasonCode;
   wrapper.dataset.bleeoRevealed = "false";
   wrapper.dataset.bleeoMarkers = String(currentSettings.showMarkers);
-  wrapper.title = "Filtered by Bleeo. Click to reveal temporarily.";
+  wrapper.tabIndex = 0;
+  wrapper.setAttribute("role", "button");
+  wrapper.setAttribute("aria-label", "Text softened by Bleeo. Reveal for 9 seconds.");
+  wrapper.setAttribute("aria-pressed", "false");
+  wrapper.title = "Softened by Bleeo. Click or press Enter / Space to reveal for 9 seconds.";
 
   parent.replaceChild(wrapper, node);
   wrapper.textContent = node.textContent;
@@ -526,6 +531,22 @@ function startObserver() {
   observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
 }
 
+function revealText(wrapper: HTMLElement) {
+  const previousTimer = revealTimers.get(wrapper);
+  if (previousTimer !== undefined) window.clearTimeout(previousTimer);
+  wrapper.dataset.bleeoRevealed = "true";
+  wrapper.setAttribute("aria-label", `${wrapper.textContent} Revealed by Bleeo. Press again to extend by 9 seconds.`);
+  wrapper.setAttribute("aria-pressed", "true");
+  wrapper.title = "Revealed for 9 seconds. Click again to extend; click a revealed link to open it.";
+  revealTimers.set(wrapper, window.setTimeout(() => {
+    wrapper.dataset.bleeoRevealed = "false";
+    wrapper.setAttribute("aria-label", "Text softened by Bleeo. Reveal for 9 seconds.");
+    wrapper.setAttribute("aria-pressed", "false");
+    wrapper.title = "Softened by Bleeo. Click or press Enter / Space to reveal for 9 seconds.";
+    revealTimers.delete(wrapper);
+  }, REVEAL_TIMEOUT_MS));
+}
+
 document.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) {
@@ -537,11 +558,20 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  wrapper.dataset.bleeoRevealed = "true";
-  window.setTimeout(() => {
-    wrapper.dataset.bleeoRevealed = "false";
-  }, REVEAL_TIMEOUT_MS);
-});
+  if (wrapper.dataset.bleeoRevealed !== "true") {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  revealText(wrapper);
+}, true);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (!(event.target instanceof HTMLElement) || !event.target.matches(".bleeo-filtered")) return;
+  event.preventDefault();
+  event.stopPropagation();
+  revealText(event.target);
+}, true);
 
 async function loadSettings() {
   const response = await sendMessage<{ settings: EffectiveSettings }>({
