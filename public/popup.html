@@ -4,31 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bleeo</title>
+    <link rel="stylesheet" href="theme.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="shell">
       <section class="hero" aria-labelledby="popup-title">
         <div class="brand-row">
-          <div class="brand-mark" aria-hidden="true">B</div>
-          <div>
-            <p class="eyebrow">A calmer feed</p>
-            <h1 id="popup-title">Bleeo</h1>
-          </div>
+          <div class="brand-mark" aria-hidden="true">b</div>
+          <span class="wordmark">Bleeo</span>
+          <span class="brand-tag">Your quiet corner</span>
         </div>
-        <p class="lede">Soften the noise. Read on your terms.</p>
+        <div class="hero-content">
+          <div class="hero-copy">
+            <h1 id="popup-title" class="display-title">Less noise.<br /><em>More space.</em></h1>
+            <p class="lede">A calmer little corner<br />of the internet. Yours.</p>
+          </div>
+          <img class="garden" src="utopia-garden.svg" width="240" height="260" alt="" aria-hidden="true" />
+        </div>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <span>Current page</span>
+          <div class="site-heading">
+            <span class="eyebrow">Your current space</span>
+            <p id="hostname" class="current-site">Checking current page…</p>
+          </div>
           <strong id="state-chip" class="state-chip" role="status">Loading</strong>
         </div>
-        <p id="hostname" class="current-site">Checking current page…</p>
 
         <label class="toggle switch-row">
           <span class="label-stack">
-            <span>Enable Bleeo</span>
+            <span>Let Bleeo soften the noise</span>
             <small>Across supported sites</small>
           </span>
           <input id="global-enabled" type="checkbox" disabled />
@@ -44,30 +51,28 @@
           <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
-        <label class="field">
-          <span class="field-label">Sensitivity</span>
-          <span class="select-shell">
-            <select id="sensitivity" aria-describedby="sensitivity-help" disabled>
-              <option value="low">Low · Less filtering</option>
-              <option value="medium">Medium · Balanced</option>
-              <option value="high">High · More filtering</option>
-            </select>
-          </span>
-          <small id="sensitivity-help" class="helper">Choose how much language to soften.</small>
-        </label>
+        <fieldset id="sensitivity" class="sensitivity-field" aria-describedby="sensitivity-help">
+          <legend>Sensitivity <span class="legend-note">Find your balance</span></legend>
+          <div class="sensitivity-options">
+            <label class="sensitivity-choice"><input type="radio" name="sensitivity" value="low" disabled /><span>Low</span></label>
+            <label class="sensitivity-choice"><input type="radio" name="sensitivity" value="medium" disabled /><span>Medium</span></label>
+            <label class="sensitivity-choice"><input type="radio" name="sensitivity" value="high" disabled /><span>High</span></label>
+          </div>
+          <p id="sensitivity-help" class="helper">Choose how much language to soften.</p>
+        </fieldset>
 
-        <p class="privacy-note"><span id="mode">On-device</span> · No server calls</p>
+        <p class="privacy-note"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m10 2 6 2v5c0 4-6 8-6 8s-6-4-6-8V4l6-2Z" stroke="currentColor" stroke-width="1.5"/><path d="m7 9 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span><span id="mode">On-device</span> · No server calls</span><span class="privacy-spark" aria-hidden="true">✳</span></p>
 
         <div class="actions">
           <button id="snooze-site" class="button secondary" type="button" disabled>Pause for 1 hour</button>
-          <button id="open-options" class="button" type="button">All settings</button>
+          <button id="open-options" class="button" type="button">All settings <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
         <div class="feedback-row">
           <p id="feedback" class="helper" role="status" aria-live="polite">Loading settings…</p>
           <button id="retry" class="button secondary" type="button" hidden>Retry</button>
         </div>
       </section>
-      <p class="reveal-tip">Click or press Enter / Space on softened text to reveal it for 9 seconds.</p>
+      <p class="reveal-tip"><span aria-hidden="true">✧</span> Still curious? Click softened text or press Enter / Space to reveal it for 9 seconds.</p>
     </main>
 
     <script type="module" src="popup.js"></script>

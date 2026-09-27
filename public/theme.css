@@ -1,0 +1,370 @@
+:root {
+  color-scheme: light;
+  --paper: #f8f7ef;
+  --panel: #fffef9;
+  --ink: #242d53;
+  --muted: #626780;
+  --accent: #3047bf;
+  --accent-strong: #233699;
+  --lilac: #e9e3fb;
+  --lime: #e6f29a;
+  --sky: #d9edf2;
+  --line: #dedee5;
+  --danger: #a52c38;
+  font-family: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+button, input {
+  font: inherit;
+}
+
+button, input {
+  accent-color: var(--accent);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+h1, h2, p {
+  margin-top: 0;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px 11px 11px 3px;
+  background: var(--accent);
+  color: var(--lime);
+  font-size: 26px;
+  font-weight: 750;
+  line-height: 1;
+  padding-bottom: 3px;
+}
+
+.wordmark {
+  font-size: 23px;
+  letter-spacing: -1.2px;
+  font-weight: 750;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.display-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -1.7px;
+}
+
+.display-title em {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.label-stack {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.label-stack small {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.switch-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.switch-row input {
+  position: absolute;
+  right: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch-ui {
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: #d3d5df;
+  transition: background-color 180ms ease;
+  pointer-events: none;
+}
+
+.switch-ui::after {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 3px;
+  border-radius: 50%;
+  background: #fffef9;
+  box-shadow: 0 1px 3px #242d5333;
+  transition: transform 180ms ease;
+}
+
+.switch-row input:checked + .switch-ui {
+  background: var(--accent);
+}
+
+.switch-row input:checked + .switch-ui::after {
+  transform: translateX(18px);
+  background: var(--lime);
+}
+
+.switch-row:has(input:disabled) {
+  cursor: default;
+}
+
+.switch-row input:disabled + .switch-ui {
+  opacity: .45;
+}
+
+.sensitivity-field {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+}
+
+.sensitivity-field legend {
+  padding: 0;
+  margin-bottom: 9px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.sensitivity-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #f1f0f6;
+}
+
+.sensitivity-choice {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.sensitivity-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.sensitivity-choice span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 37px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.sensitivity-choice input:checked + span {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 4px #242d5314;
+}
+
+.sensitivity-choice:hover span {
+  background: #e4e2ee;
+}
+
+.sensitivity-choice input:checked + span:hover {
+  background: var(--accent-strong);
+}
+
+.sensitivity-choice input:disabled + span {
+  opacity: .5;
+  cursor: default;
+}
+
+.sensitivity-choice svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.helper {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 12px;
+  text-decoration: none;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.button:hover {
+  background: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button.secondary, .button.subtle {
+  background: var(--lilac);
+  color: var(--accent-strong);
+}
+
+.button.secondary:hover, .button.subtle:hover {
+  background: #dcd4f4;
+}
+
+.button[data-snoozed="true"] {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.switch-row input:focus-visible + .switch-ui, .sensitivity-choice input:focus-visible + span {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.feedback-row, .save-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-row p, .save-status p {
+  margin: 0;
+  flex: 1;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+#feedback[data-state="error"] {
+  color: var(--danger);
+}
+
+.feedback-row .button, .save-status .button {
+  min-height: 30px;
+  padding: 5px 10px;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .switch-ui, .switch-ui::after, .sensitivity-choice span, .brand-mark {
+    border: 1px solid ButtonText;
+  }
+  .switch-row input:checked + .switch-ui, .sensitivity-choice input:checked + span {
+    background: Highlight;
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+  .switch-ui::after {
+    background: Canvas;
+  }
+}

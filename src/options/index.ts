@@ -2,7 +2,7 @@ import type { Message, Settings } from "../shared/types";
 import { requestSettings, SENSITIVITY_HELP } from "../shared/ui";
 
 const enabledInput = document.querySelector<HTMLInputElement>("#enabled");
-const sensitivityInput = document.querySelector<HTMLSelectElement>("#sensitivity");
+const sensitivityInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="sensitivity"]'));
 const markersInput = document.querySelector<HTMLInputElement>("#markers");
 const modeElement = document.querySelector<HTMLElement>("#mode");
 const refreshButton = document.querySelector<HTMLButtonElement>("#refresh");
@@ -20,7 +20,7 @@ function showFeedback(message: string, error = false) {
 }
 
 function disableControls() {
-  document.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(".controls input, .controls select, #site-overrides button, #refresh, #retry")
+  document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(".controls input, #site-overrides button, #refresh, #retry")
     .forEach((control) => { control.disabled = busy || (!lastSettings && control.id !== "refresh" && control.id !== "retry"); });
 }
 
@@ -94,9 +94,7 @@ function render(settings: Settings) {
   if (enabledInput) {
     enabledInput.checked = settings.enabled;
   }
-  if (sensitivityInput) {
-    sensitivityInput.value = settings.sensitivity;
-  }
+  sensitivityInputs.forEach((input) => { input.checked = input.value === settings.sensitivity; });
   document.querySelector("#sensitivity-help")!.textContent = SENSITIVITY_HELP[settings.sensitivity];
   if (markersInput) {
     markersInput.checked = settings.showMarkers;
@@ -118,16 +116,13 @@ enabledInput?.addEventListener("change", async () => {
   });
 });
 
-sensitivityInput?.addEventListener("change", async () => {
-  if (!sensitivityInput) {
-    return;
-  }
-
+sensitivityInputs.forEach((input) => input.addEventListener("change", async () => {
+  if (!input.checked) return;
   await update({
     type: "SET_SENSITIVITY",
-    sensitivity: sensitivityInput.value as Settings["sensitivity"]
+    sensitivity: input.value as Settings["sensitivity"]
   });
-});
+}));
 
 markersInput?.addEventListener("change", async () => {
   await update({

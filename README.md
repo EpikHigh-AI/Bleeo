@@ -8,7 +8,16 @@ Bleeo is an open-source Chrome and Edge extension that softens sensationalized l
 
 [Get started](#get-started) · [How it works](#how-it-works) · [Privacy](#privacy) · [Contribute](#contribute)
 
-<img src="docs/images/popup.png" alt="Bleeo toolbar preview showing current-site controls, sensitivity guidance, and local processing" width="320" />
+<img src="docs/images/popup.png" alt="Bleeo's illustrated garden popup with cobalt controls, sensitivity choices, and current-site status" width="360" />
+
+A small digital garden for your browser: warm cream, cobalt, lilac, and citrus, with illustrated scenery and sensitivity controls you can adjust at a glance. The settings page brings the same feel to your preferences.
+
+<details>
+<summary>Explore the settings page</summary>
+
+<img src="docs/images/settings.png" alt="Bleeo settings with filtering controls, site preferences, and privacy guidance" width="900" />
+
+</details>
 
 ## A little more room to choose
 

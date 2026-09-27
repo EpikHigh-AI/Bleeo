@@ -4,11 +4,11 @@ import type { Message, PopupState, Settings } from "../shared/types";
 
 const globalInput = document.querySelector<HTMLInputElement>("#global-enabled")!;
 const siteInput = document.querySelector<HTMLInputElement>("#site-enabled")!;
-const sensitivityInput = document.querySelector<HTMLSelectElement>("#sensitivity")!;
+const sensitivityInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="sensitivity"]'));
 const snoozeButton = document.querySelector<HTMLButtonElement>("#snooze-site")!;
 const feedback = document.querySelector<HTMLElement>("#feedback")!;
 const retryButton = document.querySelector<HTMLButtonElement>("#retry")!;
-const controls = [globalInput, siteInput, sensitivityInput, snoozeButton];
+const controls = [globalInput, siteInput, ...sensitivityInputs, snoozeButton];
 let hostname = "";
 let available = false;
 let settings: PopupState | undefined;
@@ -23,7 +23,7 @@ function render() {
 
   globalInput.checked = settings.enabled;
   siteInput.checked = available && settings.sitePreferenceEnabled;
-  sensitivityInput.value = settings.sensitivity;
+  sensitivityInputs.forEach((input) => { input.checked = input.value === settings!.sensitivity; });
   document.querySelector("#sensitivity-help")!.textContent = SENSITIVITY_HELP[settings.sensitivity];
   document.querySelector("#hostname")!.textContent = hostname || "Browser page";
   const status = getPageStatus(settings, available);
@@ -95,7 +95,9 @@ async function save(message: Message) {
 
 globalInput.addEventListener("change", () => { void save({ type: "TOGGLE_GLOBAL", enabled: globalInput.checked }); });
 siteInput.addEventListener("change", () => { void save({ type: "TOGGLE_SITE", hostname, enabled: siteInput.checked }); });
-sensitivityInput.addEventListener("change", () => { void save({ type: "SET_SENSITIVITY", sensitivity: sensitivityInput.value as PopupState["sensitivity"] }); });
+sensitivityInputs.forEach((input) => input.addEventListener("change", () => {
+  if (input.checked) void save({ type: "SET_SENSITIVITY", sensitivity: input.value as PopupState["sensitivity"] });
+}));
 snoozeButton.addEventListener("click", () => {
   if (!available) return;
   void save(settings?.siteSnoozed
